@@ -1,9 +1,9 @@
+
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { PlusCircle, LayoutGrid, CalendarClock, BookOpen } from 'lucide-react';
 import ExamField from './ExamField';
 import RoomField from './RoomField';
-import ScheduleResult from './ScheduleResult';
 
 interface Exam {
   name: string;
@@ -60,8 +60,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
   
   const [results, setResults] = useState<ScheduleResult['results']>([]);
   const [totalPeriod, setTotalPeriod] = useState<number>(0);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+  // Rename these variables to avoid conflict with props
+  const [formIsLoading, setFormIsLoading] = useState<boolean>(false);
+  const [formError, setFormError] = useState<string | null>(null);
   
   const handleAddExam = () => {
     setExams([...exams, { ...initialExam }]);
@@ -128,7 +129,10 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
       return;
     }
     
+    // Use both the local state and the props
+    setFormIsLoading(true);
     setIsLoading(true);
+    setFormError(null);
     setError(null);
     
     try {
@@ -156,12 +160,17 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
         onResults(data.results, data.total_period, days, slotsPerDay);
         toast.success("Planning généré avec succès !");
       } else {
-        setError(data.message || "Une erreur est survenue lors de la génération du planning.");
+        const errorMessage = data.message || "Une erreur est survenue lors de la génération du planning.";
+        setFormError(errorMessage);
+        setError(errorMessage);
       }
     } catch (err) {
-      setError("Impossible de communiquer avec le serveur. Veuillez réessayer plus tard.");
+      const errorMessage = "Impossible de communiquer avec le serveur. Veuillez réessayer plus tard.";
+      setFormError(errorMessage);
+      setError(errorMessage);
       console.error(err);
     } finally {
+      setFormIsLoading(false);
       setIsLoading(false);
     }
   };
@@ -292,10 +301,10 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
           <div className="text-center">
             <button
               type="submit"
-              disabled={isLoading}
+              disabled={formIsLoading}
               className="px-8 py-3 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg font-medium disabled:opacity-70"
             >
-              {isLoading ? 'Génération en cours...' : 'Générer le planning'}
+              {formIsLoading ? 'Génération en cours...' : 'Générer le planning'}
             </button>
           </div>
         </form>
