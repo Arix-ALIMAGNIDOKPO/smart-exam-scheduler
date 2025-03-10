@@ -21,7 +21,7 @@ const Navbar = () => {
   return (
     <header 
       className={cn(
-        "fixed top-0 w-full z-50 transition-all duration-300 ease-in-out glass-nav",
+        "fixed top-0 w-full z-50 transition-all h-[90px] duration-300 ease-in-out glass-nav",
         scrolled ? "py-3 shadow-soft" : "py-5"
       )}
     >

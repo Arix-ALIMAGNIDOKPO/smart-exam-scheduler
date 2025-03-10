@@ -30,7 +30,7 @@ const Index = () => {
   return (
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main className="flex-grow">
+      <main className="flex-grow pt-[40px]">
         <Dashboard />
       </main>
       <Footer />

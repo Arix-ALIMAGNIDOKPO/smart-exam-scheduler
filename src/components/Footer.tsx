@@ -39,52 +39,6 @@ const Footer = () => {
             </p>
           </div>
           
-          <div>
-            <h3 className="font-medium mb-3 text-sm">Navigation</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Accueil
-                </Link>
-              </li>
-              <li>
-                <Link to="/about" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  À propos
-                </Link>
-              </li>
-              <li>
-                <a href="#schedule-form" className="text-sm text-muted-foreground hover:text-primary transition-colors">
-                  Générer un planning
-                </a>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="font-medium mb-3 text-sm">Ressources</h3>
-            <ul className="space-y-2">
-              <li>
-                <a 
-                  href="https://examoptim.onrender.com/api/schedule/format" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Format API
-                </a>
-              </li>
-              <li>
-                <a 
-                  href="https://examoptim.onrender.com" 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
-                  className="text-sm text-muted-foreground hover:text-primary transition-colors"
-                >
-                  Documentation API
-                </a>
-              </li>
-            </ul>
-          </div>
         </div>
         
         <div className="mt-10 pt-5 border-t border-gray-100 flex flex-col md:flex-row justify-between items-center">
