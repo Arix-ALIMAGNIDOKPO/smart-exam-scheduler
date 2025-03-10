@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { 
   Calendar, 
@@ -74,11 +75,13 @@ const Dashboard: React.FC = () => {
     switch (activeTab) {
       case "schedule":
         return (
-          <ScheduleForm 
-            onResults={handleScheduleResults} 
-            setIsLoading={setIsLoading}
-            setError={setError}
-          />
+          <div>
+            <ScheduleForm 
+              onResults={handleScheduleResults} 
+              setIsLoading={setIsLoading}
+              setError={setError}
+            />
+          </div>
         );
       case "results":
         return (

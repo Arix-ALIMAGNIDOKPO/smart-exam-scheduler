@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { toast } from 'sonner';
 import { PlusCircle, LayoutGrid, CalendarClock, BookOpen } from 'lucide-react';
@@ -33,6 +32,12 @@ interface ScheduleResult {
   message?: string;
 }
 
+interface ScheduleFormProps {
+  onResults: (results: any[], total: number, daysCount: number, slots: number) => void;
+  setIsLoading: React.Dispatch<React.SetStateAction<boolean>>;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+}
+
 const initialExam: Exam = {
   name: '',
   duration: 0,
@@ -46,7 +51,7 @@ const initialRoom: Room = {
   capacity: 0
 };
 
-const ScheduleForm: React.FC = () => {
+const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, setError }) => {
   const [days, setDays] = useState<number>(3);
   const [slotsPerDay, setSlotsPerDay] = useState<number>(10);
   const [margin, setMargin] = useState<number>(1);
@@ -148,6 +153,7 @@ const ScheduleForm: React.FC = () => {
       if (data.status === 'success') {
         setResults(data.results);
         setTotalPeriod(data.total_period);
+        onResults(data.results, data.total_period, days, slotsPerDay);
         toast.success("Planning généré avec succès !");
       } else {
         setError(data.message || "Une erreur est survenue lors de la génération du planning.");
@@ -293,16 +299,6 @@ const ScheduleForm: React.FC = () => {
             </button>
           </div>
         </form>
-        
-        {/* Results section */}
-        <ScheduleResult 
-          results={results}
-          totalPeriod={totalPeriod}
-          days={days}
-          slotsPerDay={slotsPerDay}
-          isLoading={isLoading}
-          error={error}
-        />
       </div>
     </section>
   );
