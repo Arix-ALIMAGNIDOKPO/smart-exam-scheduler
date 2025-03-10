@@ -63,6 +63,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
   // Rename these variables to avoid conflict with props
   const [formIsLoading, setFormIsLoading] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState<number>(0);
   
   const handleAddExam = () => {
     setExams([...exams, { ...initialExam }]);
@@ -134,23 +135,47 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
     setIsLoading(true);
     setFormError(null);
     setError(null);
+    setRetryCount(0);
     
+    // Create the payload outside the try block so we can reuse it
+    const payload = {
+      days,
+      slots_per_day: slotsPerDay,
+      margin,
+      exams,
+      rooms
+    };
+
+    await fetchSchedule(payload);
+  };
+
+  const fetchSchedule = async (payload: any, retries = 0) => {
     try {
-      const payload = {
-        days,
-        slots_per_day: slotsPerDay,
-        margin,
-        exams,
-        rooms
-      };
+      // Using a CORS proxy to bypass CORS issues if they exist
+      // const API_URL = 'https://cors-anywhere.herokuapp.com/https://examoptim.onrender.com/api/schedule';
+      const API_URL = 'https://examoptim.onrender.com/api/schedule';
       
-      const response = await fetch('https://examoptim.onrender.com/api/schedule', {
+      // Log the request for debugging
+      console.log('Sending request to:', API_URL);
+      console.log('Request payload:', JSON.stringify(payload));
+      
+      const response = await fetch(API_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          // Add additional headers that might help with CORS
+          'Access-Control-Allow-Origin': '*',
         },
+        // Add credentials if needed
+        // credentials: 'include',
         body: JSON.stringify(payload),
       });
+      
+      // Check if the response is ok
+      if (!response.ok) {
+        throw new Error(`Server responded with status: ${response.status}`);
+      }
       
       const data: ScheduleResult = await response.json();
       
@@ -163,15 +188,41 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
         const errorMessage = data.message || "Une erreur est survenue lors de la génération du planning.";
         setFormError(errorMessage);
         setError(errorMessage);
+        toast.error("Erreur", {
+          description: errorMessage
+        });
       }
     } catch (err) {
-      const errorMessage = "Impossible de communiquer avec le serveur. Veuillez réessayer plus tard.";
+      console.error('Fetch error:', err);
+      
+      // If server is potentially waking up, retry a few times
+      if (retries < 3) {
+        const retryDelay = (retries + 1) * 2000; // Exponential backoff
+        setRetryCount(retries + 1);
+        
+        toast.info("Tentative de reconnexion", {
+          description: `Tentative ${retries + 1}/3. Le serveur se réveille peut-être...`
+        });
+        
+        // Wait and retry
+        setTimeout(() => {
+          fetchSchedule(payload, retries + 1);
+        }, retryDelay);
+        return;
+      }
+      
+      // After all retries, show error
+      const errorMessage = "Impossible de communiquer avec le serveur. Veuillez réessayer plus tard. Le serveur est peut-être en cours de maintenance ou de démarrage.";
       setFormError(errorMessage);
       setError(errorMessage);
-      console.error(err);
+      toast.error("Échec de connexion", {
+        description: errorMessage
+      });
     } finally {
-      setFormIsLoading(false);
-      setIsLoading(false);
+      if (retries === 0 || retries >= 3) {
+        setFormIsLoading(false);
+        setIsLoading(false);
+      }
     }
   };
 
@@ -304,9 +355,29 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
               disabled={formIsLoading}
               className="px-8 py-3 rounded-full bg-primary text-white hover:bg-primary/90 transition-colors shadow-md hover:shadow-lg font-medium disabled:opacity-70"
             >
-              {formIsLoading ? 'Génération en cours...' : 'Générer le planning'}
+              {formIsLoading ? (
+                <span className="flex items-center justify-center">
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  {retryCount > 0 ? `Tentative ${retryCount}/3...` : 'Génération en cours...'}
+                </span>
+              ) : 'Générer le planning'}
             </button>
           </div>
+          
+          {/* Connection status */}
+          {formError && (
+            <div className="mt-4 p-4 border border-red-200 bg-red-50 rounded-lg text-sm text-red-700">
+              <p className="font-medium">Problème de connexion:</p>
+              <p>{formError}</p>
+              <p className="mt-2 text-xs">
+                Note: Le serveur d'API est hébergé sur Render et peut être en mode veille. 
+                Il peut prendre jusqu'à 50 secondes pour démarrer s'il n'a pas été utilisé récemment.
+              </p>
+            </div>
+          )}
         </form>
       </div>
     </section>
