@@ -1,10 +1,10 @@
-
 import React, { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { Download, Filter, Printer, RefreshCcw, Search, Calendar, Edit, FileJson, Check, X } from 'lucide-react';
 import ScheduleTable from './ScheduleTable';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import { cn } from '@/lib/utils';
 
 interface ScheduleExam {
   name: string;
@@ -24,7 +24,6 @@ interface ScheduleResultProps {
   error: string | null;
 }
 
-// Conversion des numéros de promotion
 const promotionLabels: Record<number, string> = {
   1: "Licence 1",
   2: "Licence 2",
@@ -48,39 +47,34 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterFiliere, setFilterFiliere] = useState<string>('');
   const [filterPromotion, setFilterPromotion] = useState<string>('');
-  const [startHour, setStartHour] = useState<number>(8); // Heure de début par défaut
-  
-  // State for editing
+  const [startHour, setStartHour] = useState<number>(8);
+
   const [editingResults, setEditingResults] = useState<ScheduleExam[]>([]);
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editingExam, setEditingExam] = useState<ScheduleExam | null>(null);
-  
-  // Initialiser les données d'édition quand les résultats changent
+
   useEffect(() => {
     if (results.length > 0 && editingResults.length === 0) {
       setEditingResults([...results]);
     }
   }, [results]);
-  
+
   const filieres = [...new Set(results.map(exam => exam.filiere))].sort();
   const promotions = [...new Set(results.map(exam => exam.promotion))].sort((a, b) => a - b);
-  
+
   const filteredResults = (isEditing ? editingResults : results).filter(exam => {
-    // Search by name or room
     const matchesSearch = searchQuery === '' || 
       exam.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       exam.room.toLowerCase().includes(searchQuery.toLowerCase());
     
-    // Filter by filiere
     const matchesFiliere = filterFiliere === '' || exam.filiere === filterFiliere;
     
-    // Filter by promotion
     const matchesPromotion = filterPromotion === '' || 
       exam.promotion === parseInt(filterPromotion);
     
     return matchesSearch && matchesFiliere && matchesPromotion;
   });
-  
+
   const handleDownloadPDF = async () => {
     if (!tableRef.current) return;
     
@@ -123,7 +117,7 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
       });
     }
   };
-  
+
   const handleExportJSON = () => {
     const dataStr = "data:text/json;charset=utf-8," + 
       encodeURIComponent(JSON.stringify(isEditing ? editingResults : results, null, 2));
@@ -136,28 +130,27 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
     
     toast.success("Données JSON exportées avec succès!");
   };
-  
+
   const handlePrint = () => {
     window.print();
     toast.success("Impression lancée", {
       description: "Le planning est en cours d'impression"
     });
   };
-  
+
   const handleResetFilters = () => {
     setSearchQuery('');
     setFilterFiliere('');
     setFilterPromotion('');
   };
-  
+
   const handleEditExam = (exam: ScheduleExam) => {
     setEditingExam({...exam});
   };
-  
+
   const handleEditSave = () => {
     if (!editingExam) return;
     
-    // Mettre à jour l'examen édité dans la liste
     const updatedResults = editingResults.map(exam => 
       exam.name === editingExam.name && 
       exam.day === editingExam.day && 
@@ -174,29 +167,27 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
       description: "Les modifications ont été appliquées au planning."
     });
   };
-  
+
   const handleEditCancel = () => {
     setEditingExam(null);
   };
-  
+
   const toggleEditMode = () => {
     if (isEditing) {
-      // Quitter le mode édition
       setIsEditing(false);
       setEditingExam(null);
     } else {
-      // Entrer en mode édition
       setIsEditing(true);
       setEditingResults([...results]);
     }
   };
-  
+
   useEffect(() => {
     if (results.length > 0 && resultRef.current) {
       resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   }, [results]);
-  
+
   useEffect(() => {
     if (error) {
       toast.error("Erreur", {
@@ -204,7 +195,7 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
       });
     }
   }, [error]);
-  
+
   if (isLoading) {
     return (
       <div className="my-8 text-center p-8">
@@ -219,11 +210,11 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
       </div>
     );
   }
-  
+
   if (error && !results.length) {
-    return null; // Error is shown via toast
+    return null;
   }
-  
+
   if (!results.length) {
     return (
       <div className="my-8 text-center p-10 border border-dashed rounded-xl bg-white">
@@ -238,7 +229,6 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
     );
   }
 
-  // Modal pour l'édition d'un examen
   const EditModal = () => {
     if (!editingExam) return null;
     
@@ -415,7 +405,6 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
         </div>
       </div>
       
-      {/* Filters */}
       <div className="mb-6 p-4 bg-white rounded-lg border shadow-sm flex flex-col md:flex-row gap-4">
         <div className="relative flex-grow">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" size={18} />
@@ -482,7 +471,6 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
         />
       </div>
       
-      {/* Stats summary */}
       {filteredResults.length !== (isEditing ? editingResults : results).length && (
         <div className="mt-4 text-sm text-slate-500 flex items-center">
           <Filter size={14} className="mr-2" />
