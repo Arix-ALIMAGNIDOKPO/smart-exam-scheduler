@@ -343,7 +343,7 @@ const ScheduleResult: React.FC<ScheduleResultProps> = ({
   };
 
   return (
-    <div ref={resultRef} className="w-full animate-scale-in">
+    <div ref={resultRef} className="w-full py-16 animate-scale-in">
       {editingExam && <EditModal />}
       
       <div className="flex flex-col md:flex-row justify-between items-center mb-8">
