@@ -16,6 +16,15 @@ interface ExamFieldProps {
   onRemove: (index: number) => void;
 }
 
+const filieres = ["IA", "GL", "SI", "SEIOT", "IM", "SIRI"];
+const promotions = [
+  { label: "Licence 1", value: 1 },
+  { label: "Licence 2", value: 2 },
+  { label: "Licence 3", value: 3 },
+  { label: "Master 1", value: 4 },
+  { label: "Master 2", value: 5 },
+];
+
 const ExamField: React.FC<ExamFieldProps> = ({ exam, index, onUpdate, onRemove }) => {
   const handleChange = (field: string, value: string) => {
     if (field === 'duration' || field === 'students' || field === 'promotion') {
@@ -40,7 +49,7 @@ const ExamField: React.FC<ExamFieldProps> = ({ exam, index, onUpdate, onRemove }
         type="button"
         onClick={() => onRemove(index)}
         className="absolute top-3 right-3 text-gray-400 hover:text-red-500 p-1 rounded-full hover:bg-red-50 transition-colors"
-        aria-label="Remove exam"
+        aria-label="Supprimer cet examen"
       >
         <X size={18} />
       </button>
@@ -69,7 +78,7 @@ const ExamField: React.FC<ExamFieldProps> = ({ exam, index, onUpdate, onRemove }
             htmlFor={`exam-duration-${index}`} 
             className="block text-sm font-medium text-gray-700"
           >
-            Durée (créneaux)
+            Durée (heures)
           </label>
           <input
             id={`exam-duration-${index}`}
@@ -109,16 +118,20 @@ const ExamField: React.FC<ExamFieldProps> = ({ exam, index, onUpdate, onRemove }
           >
             Promotion
           </label>
-          <input
+          <select
             id={`exam-promotion-${index}`}
-            type="number"
-            min="1"
             value={exam.promotion || ''}
             onChange={(e) => handleChange('promotion', e.target.value)}
             className="w-full rounded-lg border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-            placeholder="Ex: 1"
             required
-          />
+          >
+            <option value="">Sélectionner une promotion</option>
+            {promotions.map((promotion) => (
+              <option key={promotion.value} value={promotion.value}>
+                {promotion.label}
+              </option>
+            ))}
+          </select>
         </div>
         
         <div className="space-y-2">
@@ -128,15 +141,20 @@ const ExamField: React.FC<ExamFieldProps> = ({ exam, index, onUpdate, onRemove }
           >
             Filière
           </label>
-          <input
+          <select
             id={`exam-filiere-${index}`}
-            type="text"
             value={exam.filiere}
             onChange={(e) => handleChange('filiere', e.target.value)}
             className="w-full rounded-lg border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-            placeholder="Ex: GL"
             required
-          />
+          >
+            <option value="">Sélectionner une filière</option>
+            {filieres.map((filiere) => (
+              <option key={filiere} value={filiere}>
+                {filiere}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
     </div>

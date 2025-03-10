@@ -15,11 +15,42 @@ interface ScheduleTableProps {
   results: ScheduleExam[];
   days: number;
   slotsPerDay: number;
+  startHour?: number; // Heure de début par défaut
 }
 
-const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDay }) => {
+// Fonction pour convertir des slots en heures lisibles
+const slotToTime = (slot: number, startHour: number = 8): string => {
+  const hour = startHour + slot;
+  return `${hour}:00 - ${hour + 1}:00`;
+};
+
+// Fonction pour déterminer le jour de la semaine
+const getDayName = (dayIndex: number): string => {
+  const days = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+  return days[dayIndex % 7];
+};
+
+// Conversion des codes de promotion en noms lisibles
+const getPromotionName = (promotion: number): string => {
+  const promotions = {
+    1: "L1",
+    2: "L2",
+    3: "L3",
+    4: "M1",
+    5: "M2"
+  };
+  return promotions[promotion as keyof typeof promotions] || `P${promotion}`;
+};
+
+const ScheduleTable: React.FC<ScheduleTableProps> = ({ 
+  results, 
+  days, 
+  slotsPerDay,
+  startHour = 8 
+}) => {
   const [visibleCells, setVisibleCells] = useState<number>(0);
   const [hoveredExam, setHoveredExam] = useState<ScheduleExam | null>(null);
+  const [isCompactView, setIsCompactView] = useState<boolean>(false);
   
   // Get all unique room names
   const rooms = [...new Set(results.map(exam => exam.room))].sort();
@@ -41,8 +72,8 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
     return () => clearInterval(interval);
   }, [days, slotsPerDay, rooms.length]);
   
-  // Generate day labels (Jour 1, Jour 2, etc.)
-  const dayLabels = Array.from({ length: days }, (_, i) => `Jour ${i + 1}`);
+  // Generate day labels
+  const dayLabels = Array.from({ length: days }, (_, i) => `Jour ${i + 1} (${getDayName(i)})`);
   
   // Helper to get exams for a specific day, slot and room
   const getExamsForCell = (day: number, slot: number, room: string) => {
@@ -92,12 +123,38 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
     return coveredSlots.some(s => s.day === day && s.slot === slot && s.room === room);
   };
 
+  // Get color based on filière
+  const getFiliereColor = (filiere: string): string => {
+    const colorMap: {[key: string]: string} = {
+      'IA': 'bg-blue-100 border-blue-200 text-blue-800 hover:bg-blue-200',
+      'GL': 'bg-green-100 border-green-200 text-green-800 hover:bg-green-200',
+      'SI': 'bg-purple-100 border-purple-200 text-purple-800 hover:bg-purple-200',
+      'SEIOT': 'bg-orange-100 border-orange-200 text-orange-800 hover:bg-orange-200',
+      'IM': 'bg-rose-100 border-rose-200 text-rose-800 hover:bg-rose-200',
+      'SIRI': 'bg-cyan-100 border-cyan-200 text-cyan-800 hover:bg-cyan-200'
+    };
+    
+    return colorMap[filiere] || 'bg-gray-100 border-gray-200 text-gray-800 hover:bg-gray-200';
+  };
+
   return (
     <div className="overflow-x-auto pb-6">
-      <table className="min-w-full border-collapse">
+      <div className="flex justify-between items-center mb-4">
+        <span className="text-sm text-slate-500">
+          {results.length} examens programmés
+        </span>
+        <button 
+          className="text-sm flex items-center text-slate-600 hover:text-primary px-2 py-1 rounded border border-slate-200 hover:border-primary"
+          onClick={() => setIsCompactView(!isCompactView)}
+        >
+          {isCompactView ? 'Vue détaillée' : 'Vue compacte'}
+        </button>
+      </div>
+      
+      <table className="min-w-full border-collapse rounded-lg overflow-hidden">
         <thead>
-          <tr className="bg-slate-50 text-slate-500 text-xs">
-            <th className="p-3 text-left font-medium w-20 border-b border-slate-200">Créneau</th>
+          <tr className="bg-slate-100 text-slate-500 text-xs uppercase tracking-wider">
+            <th className="p-3 text-left font-medium border-b border-slate-200">Créneau</th>
             {dayLabels.map((day, dayIndex) => (
               <th
                 key={dayIndex}
@@ -126,10 +183,10 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
           {Array.from({ length: slotsPerDay }, (_, slotIndex) => (
             <tr 
               key={slotIndex}
-              className={slotIndex % 2 === 0 ? 'bg-white' : 'bg-slate-50'}
+              className={slotIndex % 2 === 0 ? 'bg-white hover:bg-slate-50' : 'bg-slate-50 hover:bg-slate-100'}
             >
               <td className="p-3 text-center font-medium text-slate-700 border-t border-slate-200">
-                {slotIndex + 1}
+                <span className="whitespace-nowrap">{slotToTime(slotIndex, startHour)}</span>
               </td>
               
               {Array.from({ length: days }, (_, dayIndex) => (
@@ -148,7 +205,7 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
                       )}
                       style={{ 
                         transitionDelay: `${cellIndex * 0.005}s`,
-                        height: "72px" 
+                        height: isCompactView ? "60px" : "76px" 
                       }}
                     >
                       {exams.map((exam, examIndex) => (
@@ -157,17 +214,19 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
                           className={cn(
                             "rounded-lg p-2 text-sm border shadow-sm transition-colors",
                             hoveredExam && hoveredExam.name === exam.name && hoveredExam.day === exam.day && hoveredExam.slot === exam.slot
-                              ? "bg-blue-100 border-blue-300 text-blue-900"
-                              : "bg-blue-50 border-blue-100 text-blue-800"
+                              ? "ring-2 ring-blue-400 shadow-md"
+                              : getFiliereColor(exam.filiere)
                           )}
                           onMouseEnter={() => setHoveredExam(exam)}
                           onMouseLeave={() => setHoveredExam(null)}
                         >
-                          <div className="font-medium">{exam.name}</div>
-                          <div className="text-xs flex justify-between mt-1">
-                            <span>{exam.filiere}</span>
-                            <span>P{exam.promotion}</span>
-                          </div>
+                          <div className="font-medium truncate">{exam.name}</div>
+                          {!isCompactView && (
+                            <div className="text-xs flex justify-between mt-1">
+                              <span>{exam.filiere}</span>
+                              <span>{getPromotionName(exam.promotion)}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </td>

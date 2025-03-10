@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { PlusCircle, LayoutGrid, CalendarClock, BookOpen } from 'lucide-react';
+import { PlusCircle, Clock, CalendarClock, BookOpen } from 'lucide-react';
 import ExamField from './ExamField';
 import RoomField from './RoomField';
 
@@ -51,9 +51,14 @@ const initialRoom: Room = {
   capacity: 0
 };
 
+// Heures disponibles (8h à 18h)
+const START_HOUR = 8;
+const timeSlots = Array.from({ length: 11 }, (_, i) => START_HOUR + i);
+
 const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, setError }) => {
   const [days, setDays] = useState<number>(3);
-  const [slotsPerDay, setSlotsPerDay] = useState<number>(10);
+  const [startHour, setStartHour] = useState<number>(8);
+  const [endHour, setEndHour] = useState<number>(18);
   const [margin, setMargin] = useState<number>(1);
   const [exams, setExams] = useState<Exam[]>([{ ...initialExam }]);
   const [rooms, setRooms] = useState<Room[]>([{ ...initialRoom }]);
@@ -64,6 +69,11 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
   const [formIsLoading, setFormIsLoading] = useState<boolean>(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState<number>(0);
+  
+  // Calculer le nombre de créneaux par jour en fonction des heures de début et de fin
+  const calculateSlotsPerDay = (): number => {
+    return endHour - startHour;
+  };
   
   const handleAddExam = () => {
     setExams([...exams, { ...initialExam }]);
@@ -100,7 +110,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
   };
   
   const isFormValid = () => {
-    if (days < 1 || slotsPerDay < 1 || margin < 0) {
+    if (days < 1 || startHour >= endHour || margin < 0) {
       return false;
     }
     
@@ -129,6 +139,9 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
       });
       return;
     }
+    
+    // Calculer le nombre réel de créneaux par jour
+    const slotsPerDay = calculateSlotsPerDay();
     
     // Use both the local state and the props
     setFormIsLoading(true);
@@ -182,7 +195,7 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
       if (data.status === 'success') {
         setResults(data.results);
         setTotalPeriod(data.total_period);
-        onResults(data.results, data.total_period, days, slotsPerDay);
+        onResults(data.results, data.total_period, days, payload.slots_per_day);
         toast.success("Planning généré avec succès !");
       } else {
         const errorMessage = data.message || "Une erreur est survenue lors de la génération du planning.";
@@ -244,9 +257,12 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
         <form onSubmit={handleSubmit} className="space-y-12">
           {/* General parameters */}
           <div className="glass-card rounded-xl p-6 shadow-medium">
-            <h3 className="text-lg font-medium mb-5">Paramètres généraux</h3>
+            <h3 className="text-lg font-medium mb-5 flex items-center">
+              <CalendarClock className="mr-2 text-primary" size={22} />
+              Paramètres généraux
+            </h3>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <div className="space-y-2">
                 <label htmlFor="days" className="block text-sm font-medium text-gray-700">
                   Nombre de jours
@@ -263,23 +279,54 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
               </div>
               
               <div className="space-y-2">
-                <label htmlFor="slots-per-day" className="block text-sm font-medium text-gray-700">
-                  Créneaux par jour
+                <label htmlFor="start-hour" className="block text-sm font-medium text-gray-700">
+                  Heure de début
                 </label>
-                <input
-                  id="slots-per-day"
-                  type="number"
-                  min="1"
-                  value={slotsPerDay}
-                  onChange={(e) => setSlotsPerDay(parseInt(e.target.value) || 0)}
+                <select
+                  id="start-hour"
+                  value={startHour}
+                  onChange={(e) => setStartHour(parseInt(e.target.value))}
                   className="w-full rounded-lg border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
                   required
-                />
+                >
+                  {timeSlots.map((hour) => (
+                    <option 
+                      key={hour} 
+                      value={hour}
+                      disabled={hour >= endHour}
+                    >
+                      {hour}:00
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="space-y-2">
+                <label htmlFor="end-hour" className="block text-sm font-medium text-gray-700">
+                  Heure de fin
+                </label>
+                <select
+                  id="end-hour"
+                  value={endHour}
+                  onChange={(e) => setEndHour(parseInt(e.target.value))}
+                  className="w-full rounded-lg border-gray-200 px-4 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                  required
+                >
+                  {timeSlots.map((hour) => (
+                    <option 
+                      key={hour} 
+                      value={hour}
+                      disabled={hour <= startHour}
+                    >
+                      {hour}:00
+                    </option>
+                  ))}
+                </select>
               </div>
               
               <div className="space-y-2">
                 <label htmlFor="margin" className="block text-sm font-medium text-gray-700">
-                  Marge entre examens
+                  Marge entre examens (heures)
                 </label>
                 <input
                   id="margin"
@@ -292,16 +339,27 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
                 />
               </div>
             </div>
+            
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg text-sm text-blue-700 flex items-center">
+              <Clock className="mr-2 flex-shrink-0" size={18} />
+              <div>
+                <strong>Plage horaire:</strong> {startHour}h00 - {endHour}h00 
+                ({calculateSlotsPerDay()} créneaux d'une heure par jour)
+              </div>
+            </div>
           </div>
           
           {/* Exams */}
           <div className="glass-card rounded-xl p-6 shadow-medium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-medium">Examens</h3>
+              <h3 className="text-lg font-medium flex items-center">
+                <BookOpen className="mr-2 text-primary" size={22} />
+                Examens
+              </h3>
               <button
                 type="button"
                 onClick={handleAddExam}
-                className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors bg-white border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary/5"
               >
                 <PlusCircle className="mr-1" size={16} />
                 Ajouter un examen
@@ -324,11 +382,27 @@ const ScheduleForm: React.FC<ScheduleFormProps> = ({ onResults, setIsLoading, se
           {/* Rooms */}
           <div className="glass-card rounded-xl p-6 shadow-medium">
             <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-medium">Salles</h3>
+              <h3 className="text-lg font-medium flex items-center">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  className="mr-2 text-primary" 
+                  width="22" 
+                  height="22"
+                >
+                  <path d="M19 3v12h-5c-.023-3.681.184-7.406 5-12zm0 12v6h-1v-6h1zm-4 0v6h-1v-6h1zm-4 0v6h-1v-6h1zm-4 0v6h-1v-6h1zm-4 0v6h-1v-6h1zm-1 0h-1v-12h2v12h-1zm15-12h1v12h-1v-12zm-11 17v3h-2v-3h2zm8 0v3h-2v-3h2z" />
+                </svg>
+                Salles
+              </h3>
               <button
                 type="button"
                 onClick={handleAddRoom}
-                className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors"
+                className="flex items-center text-sm text-primary hover:text-primary/80 transition-colors bg-white border border-primary/20 px-3 py-1.5 rounded-full hover:bg-primary/5"
               >
                 <PlusCircle className="mr-1" size={16} />
                 Ajouter une salle
