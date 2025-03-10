@@ -1,9 +1,8 @@
 
 import React, { useEffect } from 'react';
-import Hero from '@/components/Hero';
 import Navbar from '@/components/Navbar';
-import ScheduleForm from '@/components/ScheduleForm';
 import Footer from '@/components/Footer';
+import Dashboard from '@/components/Dashboard';
 
 const Index = () => {
   useEffect(() => {
@@ -29,11 +28,10 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
-      <main>
-        <Hero />
-        <ScheduleForm />
+      <main className="flex-grow">
+        <Dashboard />
       </main>
       <Footer />
     </div>

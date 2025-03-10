@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { toast } from 'sonner';
-import { PlusCircle } from 'lucide-react';
+import { PlusCircle, LayoutGrid, CalendarClock, BookOpen } from 'lucide-react';
 import ExamField from './ExamField';
 import RoomField from './RoomField';
 import ScheduleResult from './ScheduleResult';

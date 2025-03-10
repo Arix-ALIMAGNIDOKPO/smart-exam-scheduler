@@ -19,6 +19,7 @@ interface ScheduleTableProps {
 
 const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDay }) => {
   const [visibleCells, setVisibleCells] = useState<number>(0);
+  const [hoveredExam, setHoveredExam] = useState<ScheduleExam | null>(null);
   
   // Get all unique room names
   const rooms = [...new Set(results.map(exam => exam.room))].sort();
@@ -29,13 +30,13 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
     let count = 0;
     
     const interval = setInterval(() => {
-      count += 5; // Increment by 5 to make animation faster
-      setVisibleCells(prev => Math.min(prev + 5, totalCells));
+      count += 10; // Increment by 10 to make animation faster
+      setVisibleCells(prev => Math.min(prev + 10, totalCells));
       
       if (count >= totalCells) {
         clearInterval(interval);
       }
-    }, 50);
+    }, 30);
     
     return () => clearInterval(interval);
   }, [days, slotsPerDay, rooms.length]);
@@ -55,29 +56,65 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
     return (dayIndex * slotsPerDay * rooms.length) + (slotIndex * rooms.length) + roomIndex;
   };
 
+  // Get all the slots that would be covered by an exam (based on its duration)
+  const getExamCoveredSlots = (exam: ScheduleExam) => {
+    const slots = [];
+    // Find the exam in the results array to get its duration
+    const examDetails = results.find(e => 
+      e.name === exam.name && 
+      e.day === exam.day && 
+      e.slot === exam.slot &&
+      e.room === exam.room
+    );
+    
+    if (!examDetails) return slots;
+    
+    // We don't have duration in the results, so we'll estimate it based on other exams
+    // For now, use 1 as default duration
+    const duration = 1;
+    
+    for (let i = 0; i < duration; i++) {
+      slots.push({
+        day: exam.day,
+        slot: exam.slot + i,
+        room: exam.room
+      });
+    }
+    
+    return slots;
+  };
+  
+  // Check if a cell is covered by the currently hovered exam
+  const isCellHighlighted = (day: number, slot: number, room: string) => {
+    if (!hoveredExam) return false;
+    
+    const coveredSlots = getExamCoveredSlots(hoveredExam);
+    return coveredSlots.some(s => s.day === day && s.slot === slot && s.room === room);
+  };
+
   return (
     <div className="overflow-x-auto pb-6">
       <table className="min-w-full border-collapse">
         <thead>
           <tr className="bg-slate-50 text-slate-500 text-xs">
-            <th className="p-3 text-left font-medium w-20">Créneau</th>
+            <th className="p-3 text-left font-medium w-20 border-b border-slate-200">Créneau</th>
             {dayLabels.map((day, dayIndex) => (
               <th
                 key={dayIndex}
                 colSpan={rooms.length}
-                className="p-3 text-center font-medium border-l border-slate-200"
+                className="p-3 text-center font-medium border-l border-b border-slate-200"
               >
                 {day}
               </th>
             ))}
           </tr>
           <tr className="bg-slate-50 text-slate-500 text-xs">
-            <th className="p-3 text-left font-medium"></th>
+            <th className="p-3 text-left font-medium border-b border-slate-200"></th>
             {dayLabels.map((_, dayIndex) => (
               rooms.map((room, roomIndex) => (
                 <th 
                   key={`${dayIndex}-${roomIndex}`}
-                  className="p-2 text-center font-medium border-l border-slate-200 min-w-40"
+                  className="p-2 text-center font-medium border-l border-b border-slate-200 min-w-40"
                 >
                   {room}
                 </th>
@@ -99,13 +136,15 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
                 rooms.map((room, roomIndex) => {
                   const exams = getExamsForCell(dayIndex, slotIndex, room);
                   const cellIndex = getCellIndex(dayIndex, slotIndex, roomIndex);
+                  const isHighlighted = isCellHighlighted(dayIndex, slotIndex, room);
                   
                   return (
                     <td 
                       key={`${dayIndex}-${slotIndex}-${roomIndex}`}
                       className={cn(
                         "p-2 border-t border-l border-slate-200 transition-all relative overflow-hidden",
-                        visibleCells > cellIndex ? "opacity-100" : "opacity-0"
+                        visibleCells > cellIndex ? "opacity-100" : "opacity-0",
+                        isHighlighted ? "bg-blue-50" : ""
                       )}
                       style={{ 
                         transitionDelay: `${cellIndex * 0.005}s`,
@@ -115,7 +154,14 @@ const ScheduleTable: React.FC<ScheduleTableProps> = ({ results, days, slotsPerDa
                       {exams.map((exam, examIndex) => (
                         <div 
                           key={examIndex}
-                          className="rounded-lg bg-blue-50 p-2 text-sm border border-blue-100 text-blue-800 shadow-sm"
+                          className={cn(
+                            "rounded-lg p-2 text-sm border shadow-sm transition-colors",
+                            hoveredExam && hoveredExam.name === exam.name && hoveredExam.day === exam.day && hoveredExam.slot === exam.slot
+                              ? "bg-blue-100 border-blue-300 text-blue-900"
+                              : "bg-blue-50 border-blue-100 text-blue-800"
+                          )}
+                          onMouseEnter={() => setHoveredExam(exam)}
+                          onMouseLeave={() => setHoveredExam(null)}
                         >
                           <div className="font-medium">{exam.name}</div>
                           <div className="text-xs flex justify-between mt-1">
