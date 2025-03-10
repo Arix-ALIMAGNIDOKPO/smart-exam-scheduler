@@ -4,8 +4,6 @@ import {
   Calendar, 
   LayoutDashboard, 
   School, 
-  BookOpen, 
-  Settings, 
   Menu, 
   X, 
   ChevronLeft, 
@@ -110,12 +108,6 @@ const Dashboard: React.FC = () => {
         );
       case "overview":
         return <Hero />;
-      case "docs":
-        // Redirect to About page when docs is clicked
-        useEffect(() => {
-          navigate('/about');
-        }, []);
-        return <div className="p-6">Redirection vers la documentation...</div>;
       default:
         return <div className="p-6 text-center text-gray-500">Contenu en cours de développement</div>;
     }
@@ -176,18 +168,6 @@ const Dashboard: React.FC = () => {
               label="Résultats" 
               active={activeTab === "results"}
               onClick={() => setActiveTab("results")}
-            />
-            <NavItem 
-              icon={<BookOpen size={20} />} 
-              label="Documentation" 
-              active={activeTab === "docs"}
-              onClick={() => setActiveTab("docs")}
-            />
-            <NavItem 
-              icon={<Settings size={20} />} 
-              label="Paramètres" 
-              active={activeTab === "settings"}
-              onClick={() => setActiveTab("settings")}
             />
           </nav>
           
